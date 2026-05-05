@@ -1,0 +1,10 @@
+.git
+.railway
+.tmp
+node_modules
+vendor
+deploy/docker-compose.yml
+deploy/Caddyfile
+deploy/.env.docker.example
+README.md
+.env
