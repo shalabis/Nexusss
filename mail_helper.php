@@ -3,12 +3,15 @@ require_once __DIR__ . '/config.php';
 
 function smtp_is_configured(): bool
 {
-    return SMTP_HOST !== '';
+    return SMTP_HOST !== ''
+        && MAIL_FROM_EMAIL !== ''
+        && !str_contains(strtolower(SMTP_HOST), 'example.com')
+        && !str_contains(strtolower(MAIL_FROM_EMAIL), 'example.com');
 }
 
 function smtp_missing_configuration_message(): string
 {
-    return 'Email is not configured yet. Set SMTP_HOST, SMTP_PORT, SMTP_USERNAME, SMTP_PASSWORD, MAIL_FROM_EMAIL, and MAIL_FROM_NAME in config.php or environment variables.';
+    return 'Email is not configured yet. Set real SMTP_HOST, SMTP_PORT, SMTP_USERNAME, SMTP_PASSWORD, MAIL_FROM_EMAIL, and MAIL_FROM_NAME values in Railway variables.';
 }
 
 function smtp_read_response($socket): string
@@ -58,7 +61,7 @@ function send_mail_message(string $toEmail, string $subject, string $htmlBody, s
 function send_smtp_message(string $toEmail, string $subject, string $htmlBody, string $textBody): void
 {
     $transport = SMTP_ENCRYPTION === 'ssl' ? 'ssl://' : '';
-    $socket = stream_socket_client(
+    $socket = @stream_socket_client(
         $transport . SMTP_HOST . ':' . SMTP_PORT,
         $errorCode,
         $errorMessage,
