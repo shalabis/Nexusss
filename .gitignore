@@ -1,0 +1,7 @@
+.tmp/
+.codex
+.env
+uploads/*
+!uploads/.htaccess
+data/*.json
+*.log
