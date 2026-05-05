@@ -44,6 +44,7 @@ Recommended setup:
    - `DB_NAME=${{MySQL.MYSQLDATABASE}}`
    - `DB_USER=${{MySQL.MYSQLUSER}}`
    - `DB_PASS=${{MySQL.MYSQLPASSWORD}}`
+   - `RESEND_API_KEY=...` for Railway Free/Hobby/Trial, or use SMTP on Pro
    - `SMTP_HOST=...`
    - `SMTP_PORT=587`
    - `SMTP_USERNAME=...`
@@ -61,6 +62,8 @@ Recommended setup:
 7. In `Networking`, click `Generate Domain`
 
 After that, Railway gives you a public `*.up.railway.app` link.
+
+If you use Railway on a non-Pro plan, prefer Resend's HTTPS API instead of SMTP. Railway's outbound networking docs state SMTP is only available on Pro and above.
 
 ## Production Notes
 - Do not store real passwords or SMTP secrets in `config.php`.

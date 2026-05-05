@@ -69,6 +69,7 @@ $localConfig = [
     'SMS_WEBHOOK_URL' => '',
     'SMS_WEBHOOK_TOKEN' => '',
     'SMS_SENDER_ID' => 'Nexus IT',
+    'RESEND_API_KEY' => '',
     'SMTP_HOST' => '',
     'SMTP_PORT' => '587',
     'SMTP_USERNAME' => '',
@@ -101,6 +102,9 @@ define('ADMIN_RESET_SECRET', nexus_env('ADMIN_RESET_SECRET', $localConfig['ADMIN
 define('SMS_WEBHOOK_URL', nexus_env('SMS_WEBHOOK_URL', $localConfig['SMS_WEBHOOK_URL']));
 define('SMS_WEBHOOK_TOKEN', nexus_env('SMS_WEBHOOK_TOKEN', $localConfig['SMS_WEBHOOK_TOKEN']));
 define('SMS_SENDER_ID', nexus_env('SMS_SENDER_ID', $localConfig['SMS_SENDER_ID']));
+
+// Resend API key for HTTPS-based email sending.
+define('RESEND_API_KEY', nexus_env('RESEND_API_KEY', $localConfig['RESEND_API_KEY']));
 
 // SMTP settings for email OTP verification.
 define('SMTP_HOST', nexus_env('SMTP_HOST', $localConfig['SMTP_HOST']));

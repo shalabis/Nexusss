@@ -1,6 +1,13 @@
 <?php
 require_once __DIR__ . '/config.php';
 
+function resend_is_configured(): bool
+{
+    return RESEND_API_KEY !== ''
+        && MAIL_FROM_EMAIL !== ''
+        && !str_contains(strtolower(MAIL_FROM_EMAIL), 'example.com');
+}
+
 function smtp_is_configured(): bool
 {
     return SMTP_HOST !== ''
@@ -11,7 +18,55 @@ function smtp_is_configured(): bool
 
 function smtp_missing_configuration_message(): string
 {
-    return 'Email is not configured yet. Set real SMTP_HOST, SMTP_PORT, SMTP_USERNAME, SMTP_PASSWORD, MAIL_FROM_EMAIL, and MAIL_FROM_NAME values in Railway variables.';
+    return 'Email is not configured yet. Set RESEND_API_KEY and MAIL_FROM_EMAIL, or real SMTP variables, in Railway.';
+}
+
+function mail_sender_header(): string
+{
+    return MAIL_FROM_NAME . ' <' . MAIL_FROM_EMAIL . '>';
+}
+
+function resend_send_message(string $toEmail, string $subject, string $htmlBody, string $textBody): void
+{
+    $payload = json_encode([
+        'from' => mail_sender_header(),
+        'to' => [$toEmail],
+        'subject' => $subject,
+        'html' => $htmlBody,
+        'text' => $textBody,
+    ], JSON_UNESCAPED_SLASHES);
+
+    if ($payload === false) {
+        throw new RuntimeException('Unable to encode email payload.');
+    }
+
+    $context = stream_context_create([
+        'http' => [
+            'method' => 'POST',
+            'header' => implode("\r\n", [
+                'Authorization: Bearer ' . RESEND_API_KEY,
+                'Content-Type: application/json',
+                'Content-Length: ' . strlen($payload),
+            ]),
+            'content' => $payload,
+            'ignore_errors' => true,
+            'timeout' => 20,
+        ],
+    ]);
+
+    $response = @file_get_contents('https://api.resend.com/emails', false, $context);
+    $statusLine = $http_response_header[0] ?? '';
+
+    if (!preg_match('/\s(\d{3})\s/', $statusLine, $matches)) {
+        throw new RuntimeException('Unable to reach Resend API.');
+    }
+
+    $statusCode = (int) $matches[1];
+    if ($statusCode < 200 || $statusCode >= 300) {
+        $decoded = json_decode($response ?: '', true);
+        $message = $decoded['message'] ?? $decoded['error'] ?? trim((string) $response);
+        throw new RuntimeException('Resend API error: ' . ($message !== '' ? $message : 'HTTP ' . $statusCode));
+    }
 }
 
 function smtp_read_response($socket): string
@@ -48,6 +103,11 @@ function send_mail_message(string $toEmail, string $subject, string $htmlBody, s
 {
     if (!filter_var($toEmail, FILTER_VALIDATE_EMAIL)) {
         throw new RuntimeException('Invalid email address.');
+    }
+
+    if (resend_is_configured()) {
+        resend_send_message($toEmail, $subject, $htmlBody, $textBody);
+        return;
     }
 
     if (smtp_is_configured()) {
@@ -99,7 +159,7 @@ function send_smtp_message(string $toEmail, string $subject, string $htmlBody, s
 
         $boundary = 'nexus_' . bin2hex(random_bytes(8));
         $headers = [
-            'From: ' . MAIL_FROM_NAME . ' <' . MAIL_FROM_EMAIL . '>',
+            'From: ' . mail_sender_header(),
             'To: <' . $toEmail . '>',
             'Subject: ' . $subject,
             'MIME-Version: 1.0',
